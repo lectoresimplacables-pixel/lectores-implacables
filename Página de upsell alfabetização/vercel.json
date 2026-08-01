@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/encuesta", "destination": "/encuesta-producto.dc.html" },
-    { "source": "/gracias", "destination": "/Gracias.dc.html" },
-    { "source": "/upsell", "destination": "/upsell-lectores-implacables.dc.html" },
-    { "source": "/stats", "destination": "/stats.dc.html" }
-  ]
-}
