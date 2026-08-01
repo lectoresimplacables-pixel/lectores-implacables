@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: oklch(0.97 0.01 250); }
+    a { color: #0F02FE; }
+    a:hover { color: #2d1fff; }
+  </style>
+</helmet>
+
+<sc-if value="{{ locked }}" hint-placeholder-val="{{ true }}">
+  <div style="font-family: 'Nunito', sans-serif; max-width: 360px; margin: 80px auto; display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center;">
+    <span style="font-size: 28px;">🔒</span>
+    <h1 style="font-family: 'Baloo 2', sans-serif; font-size: 20px; margin: 0; color: oklch(0.28 0.05 260);">Área restringida</h1>
+    <input type="password" value="{{ passwordInput }}" onChange="{{ handlePasswordChange }}" placeholder="Contraseña" style="width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 10px; border: 1px solid oklch(0.85 0.02 260); font-size: 15px; font-family: 'Nunito', sans-serif;"></input>
+    <button onClick="{{ handleUnlock }}" style="width: 100%; background: #0F02FE; color: white; font-weight: 800; font-size: 15px; padding: 12px; border: none; border-radius: 10px; cursor: pointer;">Entrar</button>
+    <sc-if value="{{ showError }}" hint-placeholder-val="{{ false }}">
+      <span style="color: oklch(0.6 0.19 25); font-size: 13px; font-weight: 700;">Contraseña incorrecta</span>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ unlocked }}" hint-placeholder-val="{{ false }}">
+<div style="font-family: 'Nunito', sans-serif; max-width: 680px; margin: 0 auto; padding: 40px 20px 64px; display: flex; flex-direction: column; gap: 24px;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <h1 style="font-family: 'Baloo 2', sans-serif; font-size: 26px; margin: 0; color: oklch(0.28 0.05 260);">Resultados de la encuesta</h1>
+      <span style="font-size: 14px; color: oklch(0.5 0.03 260);">{{ totalLabel }}</span>
+    </div>
+    <button onClick="{{ handleReset }}" style="background: white; border: 1px solid oklch(0.85 0.02 260); color: oklch(0.45 0.03 260); font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: 10px; cursor: pointer;">Reiniciar contador</button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <sc-for list="{{ items }}" as="it" hint-placeholder-count="5">
+      <div style="display: flex; flex-direction: column; gap: 6px; background: white; border: 1px solid oklch(0.91 0.02 260); border-radius: 14px; padding: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 18px;">{{ it.icon }}</span>
+            <span style="font-weight: 800; font-size: 14px; color: oklch(0.3 0.04 260);">{{ it.title }}</span>
+          </div>
+          <span style="font-weight: 900; font-size: 15px; color: #0F02FE; white-space: nowrap;">{{ it.count }} · {{ it.pct }}%</span>
+        </div>
+        <div style="width: 100%; height: 10px; background: oklch(0.93 0.01 260); border-radius: 100px; overflow: hidden;">
+          <div style="height: 100%; width: {{ it.barWidth }}; background: {{ it.isTop }};"></div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <p style="font-size: 12px; color: oklch(0.55 0.02 260); text-align: center; margin: 0;">Datos guardados localmente en este navegador (demo sin base de datos).</p>
+
+</div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 720}}">
+class Component extends DCLogic {
+  state = { unlocked: false, passwordInput: '', showError: false };
+
+  handleUnlock() {
+    if (this.state.passwordInput === '123321') this.setState({ unlocked: true, showError: false });
+    else this.setState({ showError: true });
+  }
+
+  readCounts() {
+    try {
+      const raw = localStorage.getItem('encuesta_stats');
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  }
+
+  handleReset() {
+    localStorage.removeItem('encuesta_stats');
+    this.forceUpdate();
+  }
+
+  renderVals() {
+    const products = [
+      { id: 1, icon: '📱', title: 'App "Aprende Jugando"' },
+      { id: 2, icon: '🧩', title: 'Baúl de Alfabetización Lúdica' },
+      { id: 3, icon: '📊', title: 'Planilla + Diagnóstico Diario' },
+      { id: 4, icon: '🎬', title: 'Armonía Escolar + Papercraft' },
+      { id: 5, icon: '💬', title: 'Acompañamiento por WhatsApp' },
+    ];
+    const counts = this.readCounts();
+    const total = products.reduce((sum, p) => sum + (counts[p.id] || 0), 0);
+    const maxCount = Math.max(1, ...products.map(p => counts[p.id] || 0));
+
+    const items = products.map(p => {
+      const count = counts[p.id] || 0;
+      const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+      const isTop = count === maxCount && count > 0;
+      return {
+        ...p,
+        count,
+        pct,
+        barWidth: `${Math.round((count / maxCount) * 100)}%`,
+        isTop: isTop ? '#0F02FE' : 'oklch(0.75 0.06 255)',
+      };
+    });
+
+    return {
+      items,
+      totalLabel: total > 0 ? `${total} respuesta${total === 1 ? '' : 's'} en total` : 'Aún no hay respuestas',
+      handleReset: () => this.handleReset(),
+      locked: !this.state.unlocked,
+      unlocked: this.state.unlocked,
+      passwordInput: this.state.passwordInput,
+      showError: this.state.showError,
+      handlePasswordChange: (e) => this.setState({ passwordInput: e.target.value }),
+      handleUnlock: () => this.handleUnlock(),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
